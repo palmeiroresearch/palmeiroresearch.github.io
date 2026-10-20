@@ -1,571 +1,174 @@
-<!DOCTYPE html>
-<html lang="es">
+﻿<!DOCTYPE html>
+<html lang="es" data-variant="editorial">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Palmeiro — Ingeniería de software clínico</title>
-<meta name="description" content="Ahmed Andrés Aguilera Palmeiro — médico residente de Medicina Interna en La Habana, desarrollador de herramientas clínicas PWA offline-first usadas en guardias hospitalarias reales.">
+<meta name="description" content="Ahmed Andrés Aguilera Palmeiro — residente de Medicina Interna en La Habana. Construyo herramientas clínicas offline-first usadas en guardias hospitalarias reales: calculadoras, visor DICOM, formulario nacional de medicamentos y percentiles pediátricos.">
+<meta name="author" content="Ahmed Andrés Aguilera Palmeiro">
+<meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1214" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://palmeiromed.com/">
 
 <meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="palmeiromed.com">
 <meta property="og:title" content="Palmeiro — Ingeniería de software clínico">
-<meta property="og:description" content="Médico residente de Medicina Interna. Construyo herramientas clínicas offline-first usadas en guardias reales: calculadoras médicas, visor DICOM, percentiles pediátricos.">
+<meta property="og:description" content="Residente de Medicina Interna. Cuatro herramientas clínicas offline-first construidas y usadas en guardias hospitalarias reales en La Habana.">
 <meta property="og:url" content="https://palmeiromed.com/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Palmeiro — Ingeniería de software clínico">
 <meta name="twitter:description" content="Herramientas clínicas offline-first construidas y usadas en guardias hospitalarias reales en Cuba.">
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%230a0f12%22/><path d=%22M10 55 L30 55 L38 30 L50 75 L58 45 L66 55 L90 55%22 stroke=%22%233fb8a8%22 stroke-width=%228%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230d6158%22/><path d=%22M10 55 L30 55 L38 30 L50 75 L58 45 L66 55 L90 55%22 stroke=%22%23faf7f2%22 stroke-width=%228%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
 
-<style>
-  :root {
-    color-scheme: dark;
-    --bg: #0a0f12;
-    --surface: #10171b;
-    --surface-2: #141d21;
-    --border: #1f2b30;
-    --border-soft: #182226;
-    --accent: #3fb8a8;
-    --accent-glow: rgba(63,184,168,0.55);
-    --accent-dim: #2c7d73;
-    --alert: #d9a441;
-    --text: #e6edf0;
-    --text-dim: #8b9aa0;
-    --text-faint: #6b7c82;
-    --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* faint scan-line / grid texture, like a CT scout view */
-  .grid-bg {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(63,184,168,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(63,184,168,0.05) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 90%);
-    pointer-events: none;
-  }
-
-  a { color: inherit; }
-  a:focus-visible, button:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 3px;
-  }
-
-  .wrap {
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  /* ---------- entrance + scroll reveal ---------- */
-  .fade-in-up { animation: fadeInUp 0.9s cubic-bezier(.16,.8,.32,1) both; }
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .reveal { opacity: 1; transform: none; }
-  .reveal.will-animate {
-    opacity: 0;
-    transform: translateY(22px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-    transition-delay: calc(var(--i, 0) * 90ms);
-  }
-  .reveal.will-animate.is-visible { opacity: 1; transform: translateY(0); }
-
-  @media (prefers-reduced-motion: reduce) {
-    .fade-in-up { animation: none; opacity: 1; transform: none; }
-    .reveal.will-animate { transition: none; opacity: 1; transform: none; }
-    .ecg-track svg { animation: none !important; }
-    .status-pill .dot, .hud .live-dot { animation: none !important; }
-  }
-
-  /* ---------- HERO ---------- */
-  .hero {
-    position: relative;
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    padding: 60px 0 0;
-    overflow: hidden;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .hud {
-    position: absolute;
-    inset: 20px;
-    pointer-events: none;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    color: var(--text-faint);
-    z-index: 2;
-  }
-  .hud .tl { position: absolute; top: 0; left: 0; }
-  .hud .tr { position: absolute; top: 0; right: 0; text-align: right; }
-  .hud .br { position: absolute; bottom: 0; right: 0; }
-
-  .hud .tl-line { display: block; line-height: 1.5; }
-  .hud .tl-line.accent { color: var(--accent); }
-
-  .status-pill { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .status-pill .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent-glow);
-    flex-shrink: 0;
-    animation: heartbeat 2.4s ease-in-out infinite;
-  }
-  @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    14% { transform: scale(1.45); }
-    28% { transform: scale(1); }
-    40% { transform: scale(1.25); }
-    52% { transform: scale(1); }
-  }
-
-  .hero-inner {
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding-bottom: 40px;
-  }
-
-  .role-line {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--accent);
-    letter-spacing: 0.04em;
-    margin: 0 0 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
-  .role-line span { white-space: nowrap; }
-  .role-line .sep { color: var(--text-faint); }
-
-  h1 {
-    font-size: clamp(1.9rem, 5vw, 3.1rem);
-    line-height: 1.12;
-    margin: 0 0 22px;
-    font-weight: 650;
-    letter-spacing: -0.01em;
-    max-width: 14ch;
-    text-wrap: balance;
-  }
-
-  .hero-sub {
-    font-size: clamp(1rem, 2vw, 1.15rem);
-    color: var(--text-dim);
-    max-width: 54ch;
-    margin: 0 0 36px;
-  }
-  .hero-sub strong { color: var(--text); font-weight: 600; }
-
-  .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 28px;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    color: var(--text-dim);
-    border-top: 1px solid var(--border);
-    padding-top: 18px;
-  }
-  .facts strong { color: var(--text); font-weight: 500; }
-
-  /* ---------- ECG band ---------- */
-  .ecg-wrap {
-    position: relative;
-    height: 80px;
-    overflow: hidden;
-    z-index: 1;
-    -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
-    mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
-  }
-  .ecg-wrap::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent, rgba(63,184,168,0.07));
-  }
-  .ecg-track svg {
-    display: block;
-    width: 200%;
-    height: 80px;
-    animation: ecgScroll 9s linear infinite;
-  }
-  .ecg-track path {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    filter: drop-shadow(0 0 5px var(--accent-glow));
-    opacity: 0.9;
-  }
-  @keyframes ecgScroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-
-  /* ---------- WHY (soul section) ---------- */
-  .why {
-    padding: 76px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .why-lede {
-    font-size: clamp(1.3rem, 3vw, 1.7rem);
-    font-weight: 600;
-    line-height: 1.35;
-    letter-spacing: -0.01em;
-    max-width: 32ch;
-    margin: 0 0 22px;
-    text-wrap: balance;
-  }
-  .why-body {
-    color: var(--text-dim);
-    font-size: 1.02rem;
-    max-width: 64ch;
-    margin: 0;
-  }
-  .why-body + .why-body { margin-top: 16px; }
-
-  /* ---------- SECTION HEADERS ---------- */
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
-    margin: 0 0 28px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-head h2 {
-    font-size: 1.3rem;
-    margin: 0;
-    font-weight: 600;
-  }
-  .section-head .count {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-faint);
-  }
-
-  /* ---------- PROJECTS WORKLIST ---------- */
-  .worklist {
-    padding: 80px 0;
-  }
-
-  .study {
-    position: relative;
-    display: grid;
-    grid-template-columns: 72px 1fr auto;
-    align-items: start;
-    gap: 20px;
-    padding: 22px 4px;
-    border-bottom: 1px solid var(--border-soft);
-    text-decoration: none;
-    transition: background 0.2s ease, transform 0.25s ease;
-  }
-  .study::before {
-    content: "";
-    position: absolute;
-    left: -14px;
-    top: 6px;
-    bottom: 6px;
-    width: 2px;
-    background: var(--accent);
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 0.3s ease;
-  }
-  .study:hover { background: var(--surface); transform: translateX(4px); }
-  .study:hover::before { transform: scaleY(1); }
-  .study:hover .modality { border-color: var(--accent); color: var(--accent); background: rgba(63,184,168,0.08); }
-  .study:hover .study-name { color: var(--accent); }
-  .study:last-of-type { border-bottom: 1px solid var(--border); }
-
-  .modality {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 4px 0;
-    text-align: center;
-    height: fit-content;
-    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-  }
-
-  .study-body { min-width: 0; }
-  .study-name {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin: 0 0 6px;
-    transition: color 0.2s ease;
-  }
-  .study-desc {
-    margin: 0;
-    color: var(--text-dim);
-    font-size: 0.92rem;
-    max-width: 56ch;
-  }
-  .study-meta {
-    margin: 10px 0 0;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-faint);
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-
-  .study-link {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-faint);
-    align-self: center;
-    white-space: nowrap;
-  }
-
-  /* ---------- CONTACT ---------- */
-  .signoff {
-    padding: 70px 0 90px;
-  }
-
-  .signoff-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 32px clamp(20px, 4vw, 40px);
-  }
-
-  .signoff-panel h2 {
-    font-size: 1.3rem;
-    margin: 0 0 10px;
-    font-weight: 600;
-  }
-  .signoff-panel p {
-    color: var(--text-dim);
-    margin: 0 0 26px;
-    max-width: 50ch;
-  }
-
-  .contact-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    border-top: 1px solid var(--border);
-  }
-  .contact-row {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-    text-decoration: none;
-    flex-wrap: wrap;
-    transition: padding-left 0.2s ease;
-  }
-  .contact-row:hover { padding-left: 6px; }
-  .contact-row .label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-faint);
-    width: 80px;
-    flex-shrink: 0;
-  }
-  .contact-row .value {
-    font-size: 0.98rem;
-    color: var(--text);
-    transition: color 0.2s ease;
-  }
-  .contact-row:hover .value { color: var(--accent); }
-
-  footer {
-    text-align: center;
-    padding: 30px 0 50px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-faint);
-  }
-
-  @media (max-width: 640px) {
-    .hud { inset: 14px; font-size: 10px; }
-    .study {
-      grid-template-columns: 56px 1fr;
-    }
-    .study::before { left: -10px; }
-    .study-link { display: none; }
-    .modality { font-size: 10px; padding: 3px 0; }
-    .facts { gap: 8px 18px; }
-    .ecg-wrap { height: 56px; }
-    .ecg-track svg { height: 56px; }
-  }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<section class="hero">
-  <div class="grid-bg" aria-hidden="true"></div>
-  <div class="hud" aria-hidden="true">
-    <span class="tl">
-      <span class="tl-line">PALMEIRORESEARCH</span>
-      <span class="tl-line accent">MEDICINA INTERNA</span>
-    </span>
-    <span class="tr">LA HABANA, CUBA</span>
-    <span class="br">
-      <span class="status-pill"><span class="dot"></span>EN LÍNEA</span>
-    </span>
-  </div>
+<a class="skip" href="#main">Saltar al contenido</a>
 
-  <div class="wrap hero-inner">
-    <p class="role-line fade-in-up" style="animation-delay:0.05s">
-      <span>R1</span>
-      <span class="sep">/</span>
-      <span>MEDICINA INTERNA</span>
-      <span class="sep">/</span>
-      <span>DESARROLLADOR</span>
-    </p>
+<header class="masthead" data-header>
+  <div class="shell masthead-in">
+    <a class="wordmark" href="#top">
+      <span class="wordmark-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="26" height="26" aria-hidden="true">
+          <path d="M6 56 L28 56 L36 30 L48 78 L57 44 L65 56 L94 56" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="wordmark-text">Palmeiro</span>
+      <span class="wordmark-sub">Medicina &amp; software</span>
+    </a>
 
-    <h1 class="fade-in-up" style="animation-delay:0.15s">Ahmed Andrés Aguilera Palmeiro</h1>
+    <nav class="nav" aria-label="Navegación principal">
+      <ul id="nav-desktop"></ul>
+    </nav>
 
-    <p class="hero-sub fade-in-up" style="animation-delay:0.28s">
-      Construyo <strong>software clínico offline-first</strong> — calculadoras, visores de imagen y herramientas de guardia — pensado para funcionar sin internet, en el hospital, cuando de verdad hace falta. No son maquetas: se usan en turnos reales.
-    </p>
-
-    <div class="facts fade-in-up" style="animation-delay:0.4s">
-      <span><strong>Formación</strong> Medicina · Ciencia de datos (Python, ML, PyTorch, SQL, Tableau)</span>
-      <span><strong>Trayectoria</strong> UCI (2012–2015) → Medicina Interna (residente)</span>
+    <div class="masthead-actions">
+      <button class="icon-btn" type="button" data-theme-toggle>
+        <span class="t-sun" aria-hidden="true"></span>
+        <span class="t-moon" aria-hidden="true"></span>
+      </button>
+      <button class="icon-btn nav-burger" type="button" data-nav-toggle aria-expanded="false" aria-label="Abrir menú">
+        <span aria-hidden="true"></span><span aria-hidden="true"></span>
+      </button>
     </div>
   </div>
+  <div class="nav-panel" data-nav-panel hidden>
+    <ul id="nav-mobile"></ul>
+  </div>
+</header>
 
-  <div class="ecg-wrap" aria-hidden="true">
-    <div class="ecg-track">
-      <svg viewBox="0 0 600 80" preserveAspectRatio="none">
-        <path d="M0,40 L60,40 C68,40 68,33 76,33 C84,33 84,40 92,40 L116,40 L124,45 L133,10 L142,58 L150,40 L180,40 C192,40 192,30 205,30 C218,30 218,40 230,40 L300,40
-                 M300,40 L360,40 C368,40 368,33 376,33 C384,33 384,40 392,40 L416,40 L424,45 L433,10 L442,58 L450,40 L480,40 C492,40 492,30 505,30 C518,30 518,40 530,40 L600,40" />
-      </svg>
+<main id="main">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="top">
+    <div class="shell">
+      <div class="hero-grid">
+        <div class="hero-main">
+          <p class="eyebrow"><span class="eyebrow-rule" aria-hidden="true"></span>Residente de Medicina Interna · Desarrollador</p>
+
+          <h1 class="display">Software clínico que <em>funciona sin internet</em></h1>
+
+          <p class="lede">
+            Construyo calculadoras, visores de imagen y herramientas de guardia pensadas para
+            el hospital real: sin señal, sin servidor, a las tres de la madrugada.
+            No son maquetas — se usan en turnos reales en La Habana.
+          </p>
+
+          <div class="cta-row">
+            <a class="btn btn-solid" href="#proyectos">Ver los proyectos</a>
+            <a class="btn btn-ghost" href="#contacto">Hablemos</a>
+          </div>
+        </div>
+
+        <aside class="ficha" aria-label="Ficha profesional">
+          <p class="ficha-name">Ahmed Andrés<br>Aguilera Palmeiro</p>
+          <dl id="ficha-rows"></dl>
+          <p class="ficha-status"><span class="pulse" aria-hidden="true"></span>En línea · acepta colaboraciones</p>
+        </aside>
+      </div>
+
+      <div class="stats" id="stats"></div>
     </div>
-  </div>
-</section>
 
-<section class="why wrap reveal">
-  <p class="why-lede">Antes de tocar una línea de código, pasé tres años poniendo vías y vigilando monitores en una UCI.</p>
-  <p class="why-body">Ese oficio enseña algo que ningún framework enseña: a las tres de la madrugada, cansado, sin señal y con un paciente descompensándose, la herramienta que ayuda es la que ya está en el bolsillo — no la que depende de internet.</p>
-  <p class="why-body">Por eso construyo lo que construyo. Cada calculadora, cada visor y cada app de este sitio nació de una guardia real donde hizo falta algo así y no existía. Siguen corriendo en los mismos hospitales donde las probé la primera vez.</p>
-</section>
-
-<section class="worklist wrap" id="proyectos">
-  <div class="section-head">
-    <h2>Proyectos en producción</h2>
-    <span class="count">3 activos</span>
-  </div>
-
-  <a class="study reveal" style="--i:0" href="https://clinicalc.palmeiromed.com/" target="_blank" rel="noopener">
-    <span class="modality">CALC</span>
-    <span class="study-body">
-      <p class="study-name">CliniCalc</p>
-      <p class="study-desc">Quince calculadoras médicas offline — renal, electrolitos, cardiología, neurología y cuidados críticos — con conversión de unidades y panel personalizable.</p>
-      <span class="study-meta">
-        <span>PWA</span>
-        <span>Offline</span>
-        <span>15 módulos</span>
-      </span>
-    </span>
-    <span class="study-link">abrir estudio</span>
-  </a>
-
-  <a class="study reveal" style="--i:1" href="https://tacv.palmeiromed.com/" target="_blank" rel="noopener">
-    <span class="modality">DICOM</span>
-    <span class="study-body">
-      <p class="study-name">TACV</p>
-      <p class="study-desc">Visor de imágenes DICOM/TAC en el navegador: medición de distancia, ángulo y ROI, sonda de Unidades Hounsfield, presets de ventana y realce de imagen.</p>
-      <span class="study-meta">
-        <span>Visor de imagen</span>
-        <span>Medición</span>
-        <span>Exporta PNG/HTML</span>
-      </span>
-    </span>
-    <span class="study-link">abrir estudio</span>
-  </a>
-
-  <a class="study reveal" style="--i:2" href="https://percuba.palmeiromed.com/" target="_blank" rel="noopener">
-    <span class="modality">PEDS</span>
-    <span class="study-body">
-      <p class="study-name">PerCuba</p>
-      <p class="study-desc">Percentiles antropométricos pediátricos sobre tablas de crecimiento cubanas — peso, talla, perímetro cefálico e IMC, diferenciados por sexo, con interpretación automática.</p>
-      <span class="study-meta">
-        <span>PWA</span>
-        <span>Offline</span>
-        <span>Estándares cubanos</span>
-      </span>
-    </span>
-    <span class="study-link">abrir estudio</span>
-  </a>
-
-</section>
-
-<section class="signoff wrap">
-  <div class="signoff-panel reveal">
-    <h2>Contacto</h2>
-    <p>Para colaboración, código o consultas sobre alguno de los proyectos.</p>
-
-    <div class="contact-rows">
-      <a class="contact-row" href="mailto:palmeiro.research@gmail.com">
-        <span class="label">CORREO</span>
-        <span class="value">palmeiro.research@gmail.com</span>
-      </a>
-      <a class="contact-row" href="tel:+5353032939">
-        <span class="label">TELÉFONO</span>
-        <span class="value">+53 5303 2939</span>
-      </a>
+    <div class="ecg">
+      <div class="shell ecg-head" aria-hidden="true">
+        <span class="ecg-lead">Derivación II · 25 mm/s</span>
+        <span class="ecg-bpm"><strong id="bpm">72</strong> lpm</span>
+      </div>
+      <canvas id="ecg-canvas" width="1200" height="110" role="img"
+              aria-label="Trazo de electrocardiograma en movimiento, decorativo"></canvas>
     </div>
+  </section>
+
+  <!-- ============ EL PORQUÉ ============ -->
+  <section class="section porque" id="porque">
+    <div class="shell">
+      <p class="eyebrow" data-reveal><span class="eyebrow-rule" aria-hidden="true"></span><span id="porque-eyebrow"></span></p>
+      <div class="porque-grid">
+        <p class="porque-lede display" id="porque-lede" data-reveal></p>
+        <div class="porque-body" id="porque-body" data-reveal></div>
+      </div>
+      <figure class="pullquote" data-reveal>
+        <blockquote id="porque-quote"></blockquote>
+        <figcaption>— A. Palmeiro</figcaption>
+      </figure>
+      <ol class="timeline" id="timeline"></ol>
+    </div>
+  </section>
+
+  <!-- ============ PROYECTOS ============ -->
+  <section class="section proyectos" id="proyectos">
+    <div class="shell">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow"><span class="eyebrow-rule" aria-hidden="true"></span>Proyectos en producción</p>
+        <h2 class="display">Cuatro herramientas, cuatro guardias que las pidieron</h2>
+      </div>
+      <div class="worklist" id="worklist"></div>
+    </div>
+  </section>
+
+  <!-- ============ MÉTODO ============ -->
+  <section class="section metodo" id="metodo">
+    <div class="shell">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow"><span class="eyebrow-rule" aria-hidden="true"></span>Método</p>
+        <h2 class="display">Cuatro reglas que no se negocian</h2>
+      </div>
+      <div class="principles" id="principles"></div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACTO ============ -->
+  <section class="section contacto" id="contacto">
+    <div class="shell">
+      <div class="contact-card" data-reveal>
+        <div class="contact-copy">
+          <p class="eyebrow"><span class="eyebrow-rule" aria-hidden="true"></span><span id="contact-eyebrow"></span></p>
+          <h2 class="display" id="contact-title"></h2>
+          <p class="lede lede-sm" id="contact-lede"></p>
+        </div>
+        <dl class="contact-rows" id="contact-rows"></dl>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="shell foot-in">
+    <p class="foot-disclaimer" id="foot-disclaimer"></p>
+    <p class="foot-line">© <span data-year></span> · <span id="foot-line"></span></p>
   </div>
-</section>
+</footer>
 
-<footer>palmeiromed.com · La Habana, Cuba</footer>
-
-<script>
-(function () {
-  var canAnimate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!canAnimate || !('IntersectionObserver' in window)) return;
-
-  var items = document.querySelectorAll('.reveal');
-  items.forEach(function (el) { el.classList.add('will-animate'); });
-
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-
-  items.forEach(function (el) { io.observe(el); });
-})();
-</script>
-
+<script src="shared/content.js"></script>
+<script src="shared/core.js"></script>
+<script src="shared/ecg.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
